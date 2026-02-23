@@ -1,6 +1,6 @@
 # EPREL API Client for PHP
 
-[![CI](https://github.com/asm/eprel-api-client/actions/workflows/ci.yml/badge.svg)](https://github.com/asm/eprel-api-client/actions/workflows/ci.yml)
+[![CI](https://github.com/maschmann/eprel-api-client/actions/workflows/ci.yml/badge.svg)](https://github.com/maschmann/eprel-api-client/actions/workflows/ci.yml)
 [![PHP Version](https://img.shields.io/badge/php-8.4+-8892BF.svg)](https://php.net/)
 
 A modern, fluent, and strongly-typed PHP client to interact with the **EPREL** (European Product Database for Energy Labelling) Public API.
