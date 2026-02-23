@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Eprel API Client">
+    <description>The coding standard for Eprel API Client.</description>
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+    <arg name="parallel" value="75"/>
+    <arg value="np"/>
+    <rule ref="PSR12"/>
+    <file>Asm/EprelApiClient/</file>
+</ruleset>
