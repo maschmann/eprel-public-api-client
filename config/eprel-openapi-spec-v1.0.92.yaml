@@ -1,0 +1,650 @@
+openapi: 3.0.3
+info:
+  title: EPREL Public API (Unofficial Spec)
+  description: >
+    Unofficial OpenAPI specification for the EPREL Public API.
+    This spec is based on publicly available documentation and
+    may need adjustments depending on the current API version.
+  version: 0.1.0
+  contact:
+    name: European Commission - EPREL
+
+servers:
+  - url: https://eprel.ec.europa.eu/api
+    description: Production server (verify actual base path)
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+
+  /products:
+    get:
+      summary: Search products
+      description: Retrieve a list of products matching filter criteria.
+      parameters:
+        - name: productGroup
+          in: query
+          schema:
+            type: string
+          description: Product group identifier (e.g. REFRIGERATORS, TVs, etc.)
+        - name: energyClass
+          in: query
+          schema:
+            type: string
+            example: A++
+          description: Energy efficiency class filter
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        "401":
+          description: Unauthorized (invalid or missing API key)
+
+  /products/{productGroup}:
+    get:
+      summary: List products by group
+      description: Retrieve a paginated list of products for a specific product group with advanced filtering.
+      parameters:
+        - name: productGroup
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Product group identifier (e.g. REFRIGERATORS, airconditioners, etc.)
+        - name: _page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number requested.
+        - name: _limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+          description: Number of results per page.
+        - name: modelIdentifier
+          in: query
+          schema:
+            type: string
+          description: Supplier's model identifier.
+        - name: supplierOrTrademark
+          in: query
+          schema:
+            type: string
+          description: Supplier's name or trademark.
+        - name: gtinIdentifier
+          in: query
+          schema:
+            type: string
+          description: Model GTIN number.
+        - name: includeOldProducts
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include models that are not placed on the market anymore.
+        - name: sort0
+          in: query
+          schema:
+            type: string
+        - name: order0
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+        - name: sort1
+          in: query
+          schema:
+            type: string
+        - name: order1
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+        - name: sort2
+          in: query
+          schema:
+            type: string
+        - name: order2
+          in: query
+          schema:
+            type: string
+            enum: [ASC, DESC]
+      responses:
+        "200":
+          description: Paginated list of products in the group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductGroupPage'
+        "401":
+          description: Unauthorized
+
+  /products/{productGroup}/{registrationNumber}:
+    get:
+      summary: Get product details by group
+      description: Retrieve detailed information about a specific product within a product group.
+      parameters:
+        - name: productGroup
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Product detail response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        "404":
+          description: Product not found
+        "401":
+          description: Unauthorized
+
+  /product/{registrationNumber}:
+    get:
+      summary: Get product details
+      description: Retrieve detailed information about a specific product.
+      parameters:
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: EPREL registration number
+      responses:
+        "200":
+          description: Product detail response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        "404":
+          description: Product not found
+        "401":
+          description: Unauthorized
+
+  /product-groups:
+    get:
+      summary: List product groups
+      description: Retrieve a list of all available product groups in EPREL.
+      responses:
+        "200":
+          description: List of product groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductGroup'
+        "401":
+          description: Unauthorized
+
+  /product/{registrationNumber}/labels:
+    get:
+      summary: Get product labels
+      description: Retrieve the energy label for a product.
+      parameters:
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: EPREL registration number
+        - name: noRedirect
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: >
+            Avoid 3xx redirect. If true, returns 200 OK with JSON containing the URL.
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [PNG, PDF, SVG]
+          description: Format of the file requested.
+        - name: instance
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: ONLY FOR DOMESTIC OVENS. Cavity number.
+        - name: supplier_label
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: If true, returns the supplier's label if it exists.
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [BIG_BW, BIG_COLOR, SMALL_BW, SMALL_COLOR]
+            default: BIG_COLOR
+          description: ONLY FOR LIGHT SOURCES. Label type.
+      responses:
+        "200":
+          description: Label content or URL information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "302":
+          description: Redirect to the label resource
+        "404":
+          description: Product or label not found
+        "401":
+          description: Unauthorized
+
+  /products/{productGroup}/{registrationNumber}/labels:
+    get:
+      summary: Get product labels by group
+      description: Retrieve the energy label for a product within a group.
+      parameters:
+        - name: productGroup
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: noRedirect
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [PNG, PDF, SVG]
+        - name: instance
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: supplier_label
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [BIG_BW, BIG_COLOR, SMALL_BW, SMALL_COLOR]
+            default: BIG_COLOR
+      responses:
+        "200":
+          description: Label content or URL information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "302":
+          description: Redirect to the label resource
+        "404":
+          description: Product or label not found
+        "401":
+          description: Unauthorized
+
+  /products/{productGroup}/{registrationNumber}/fiches:
+    get:
+      summary: Get product fiches by group
+      description: Retrieve the product information sheet (fiche) for a product within a group.
+      parameters:
+        - name: productGroup
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: noRedirect
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: language
+          in: query
+          schema:
+            type: string
+            enum: [BG, CS, DA, DE, ET, EL, EN, ES, FR, GA, HR, IT, LV, LT, HU, MT, NL, PL, PT, RO, SK, SL, FI, SV]
+      responses:
+        "200":
+          description: Fiche content or URL information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Product or fiche not found
+
+  /product/{registrationNumber}/fiches:
+    get:
+      summary: Get product fiches
+      description: Retrieve the product information sheet (fiche) for a product.
+      parameters:
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: noRedirect
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: language
+          in: query
+          schema:
+            type: string
+            enum: [BG, CS, DA, DE, ET, EL, EN, ES, FR, GA, HR, IT, LV, LT, HU, MT, NL, PL, PT, RO, SK, SL, FI, SV]
+      responses:
+        "200":
+          description: Fiche content or URL information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressResponse'
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Product or fiche not found
+
+  /product/{registrationNumber}/nested-label:
+    get:
+      summary: Get product nested label
+      description: Retrieve the nested energy label for a product in SVG format.
+      parameters:
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: EPREL registration number
+      responses:
+        "200":
+          description: Nested label SVG image
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Product or label not found
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Server error
+
+  /product/{registrationNumber}/class-arrow-with-scale:
+    get:
+      summary: Get product class arrow with scale
+      description: Retrieve the energy class arrow with scale for a product in SVG format.
+      parameters:
+        - name: registrationNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: EPREL registration number
+      responses:
+        "200":
+          description: Class arrow with scale SVG image
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Product or image not found
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Server error
+
+  /product/gtin/{gtin}:
+    get:
+      summary: Get product by GTIN
+      description: Retrieve product details by Global Trade Item Number (GTIN).
+      parameters:
+        - name: gtin
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 14
+          description: GTIN identifier (max 14 digits).
+      responses:
+        "200":
+          description: Product detail(s) response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ProductDetail'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/ProductDetail'
+        "404":
+          description: Product not found
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Server error
+
+  /exportProducts/{productGroup}:
+    get:
+      summary: Export all products in a group
+      description: Retrieve all models in a product group in a ZIP file containing JSON files. Export is done daily.
+      parameters:
+        - name: productGroup
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Product group identifier (e.g. ovens, electronicdisplays).
+      responses:
+        "200":
+          description: ZIP file containing product data in JSON format
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Server error
+
+components:
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+
+  schemas:
+
+    AddressResponse:
+      type: object
+      properties:
+        address:
+          type: string
+          format: uri
+
+    ProductPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSummary'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        size:
+          type: integer
+        number:
+          type: integer
+
+    ProductGroupPage:
+      type: object
+      properties:
+        size:
+          type: integer
+        offset:
+          type: integer
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSummary'
+
+    ProductSummary:
+      type: object
+      properties:
+        registrationNumber:
+          type: string
+        brandName:
+          type: string
+        modelIdentifier:
+          type: string
+        energyClass:
+          type: string
+        productGroup:
+          type: string
+
+    ProductGroup:
+      type: object
+      properties:
+        code:
+          type: string
+        url_code:
+          type: string
+        name:
+          type: string
+        regulation:
+          type: string
+
+    ProductDetail:
+      type: object
+      properties:
+        registrationNumber:
+          type: string
+        brandName:
+          type: string
+        modelIdentifier:
+          type: string
+        status:
+          type: string
+        blocked:
+          type: boolean
+        orgVerificationStatus:
+          type: string
+          enum: [UNVERIFIED, VERIFIED]
+        trademarkVerificationStatus:
+          type: string
+          enum: [UNVERIFIED, VERIFIED]
+        energyClass:
+          type: string
+        productGroup:
+          type: string
+        energyLabelUrl:
+          type: string
+          format: uri
+        productInformationSheetUrl:
+          type: string
+          format: uri
+        technicalParameters:
+          type: object
+          additionalProperties: true
