@@ -133,7 +133,7 @@ final class EprelClient
             'base_uri' => $this->uri,
             'headers' => [
                 'Accept' => 'application/json',
-                'User-Agent' => 'Asm-Eprel-SDK/1.0',
+                'User-Agent' => 'Asm-Eprel-Client/1.0',
             ],
         ];
 
