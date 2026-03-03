@@ -353,7 +353,13 @@ paths:
   /products/{productGroup}/{registrationNumber}/fiches:
     get:
       summary: Get product fiches by group
-      description: Retrieve the product information sheet (fiche) for a product within a group.
+      description: >
+        Retrieve the product information sheet (fiche) for a product within a group.
+        If `language` is specified, returns a single PDF in that language.
+        If `language` is omitted, returns a ZIP file containing fiches for all 24 EU languages.
+        If `noRedirect=true`, returns a 200 JSON response with the resource URL instead of redirecting.
+        If `noRedirect=false` (API default) or omitted, the server issues a 3xx redirect to the file.
+        The SDK client defaults `noRedirect` to `true`.
       parameters:
         - name: productGroup
           in: path
@@ -370,14 +376,25 @@ paths:
           schema:
             type: boolean
             default: false
+          description: >
+            When true, returns 200 JSON `{address: <url>}` instead of a 3xx redirect.
+            SDK client defaults this to true.
         - name: language
           in: query
+          required: false
           schema:
             type: string
             enum: [BG, CS, DA, DE, ET, EL, EN, ES, FR, GA, HR, IT, LV, LT, HU, MT, NL, PL, PT, RO, SK, SL, FI, SV]
+          description: >
+            Language code. If provided, returns a single PDF (e.g. fiche_123_ES.pdf).
+            If omitted, returns a ZIP with all languages (e.g. fiches_123.zip).
       responses:
         "200":
-          description: Fiche content or URL information
+          description: >
+            Fiche content or address URL.
+            Returns JSON AddressResponse when noRedirect=true;
+            returns PDF when a language is specified;
+            returns ZIP when no language is specified.
           content:
             application/json:
               schema:
@@ -386,17 +403,31 @@ paths:
               schema:
                 type: string
                 format: binary
+                description: Single-language fiche PDF (fiche_{reg}_{lang}.pdf)
             application/zip:
               schema:
                 type: string
                 format: binary
+                description: All-language fiche ZIP (fiches_{reg}.zip)
+        "400":
+          description: Bad request
         "404":
           description: Product or fiche not found
+        "401":
+          description: Unauthorized
+        "500":
+          description: Server error
 
   /product/{registrationNumber}/fiches:
     get:
       summary: Get product fiches
-      description: Retrieve the product information sheet (fiche) for a product.
+      description: >
+        Retrieve the product information sheet (fiche) for a product (group-less endpoint).
+        If `language` is specified, returns a single PDF in that language.
+        If `language` is omitted, returns a ZIP file containing fiches for all 24 EU languages.
+        If `noRedirect=true`, returns a 200 JSON response with the resource URL instead of redirecting.
+        If `noRedirect=false` (API default) or omitted, the server issues a 3xx redirect to the file.
+        The SDK client defaults `noRedirect` to `true`.
       parameters:
         - name: registrationNumber
           in: path
@@ -408,14 +439,25 @@ paths:
           schema:
             type: boolean
             default: false
+          description: >
+            When true, returns 200 JSON `{address: <url>}` instead of a 3xx redirect.
+            SDK client defaults this to true.
         - name: language
           in: query
+          required: false
           schema:
             type: string
             enum: [BG, CS, DA, DE, ET, EL, EN, ES, FR, GA, HR, IT, LV, LT, HU, MT, NL, PL, PT, RO, SK, SL, FI, SV]
+          description: >
+            Language code. If provided, returns a single PDF (e.g. fiche_123_ES.pdf).
+            If omitted, returns a ZIP with all languages (e.g. fiches_123.zip).
       responses:
         "200":
-          description: Fiche content or URL information
+          description: >
+            Fiche content or address URL.
+            Returns JSON AddressResponse when noRedirect=true;
+            returns PDF when a language is specified;
+            returns ZIP when no language is specified.
           content:
             application/json:
               schema:
@@ -424,12 +466,20 @@ paths:
               schema:
                 type: string
                 format: binary
+                description: Single-language fiche PDF (fiche_{reg}_{lang}.pdf)
             application/zip:
               schema:
                 type: string
                 format: binary
+                description: All-language fiche ZIP (fiches_{reg}.zip)
+        "400":
+          description: Bad request
         "404":
           description: Product or fiche not found
+        "401":
+          description: Unauthorized
+        "500":
+          description: Server error
 
   /product/{registrationNumber}/nested-label:
     get:

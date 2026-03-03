@@ -392,7 +392,8 @@ final class EprelClient
     public function getFiches(
         string $registrationNumber,
         ?string $productGroup = null,
-        array $queryParams = []
+        ?string $language = null,
+        bool $noRedirect = true
     ): string|AddressResponse {
         $this->initialize();
         \assert($this->httpClient instanceof ClientInterface);
@@ -401,6 +402,11 @@ final class EprelClient
             $path = $productGroup !== null
                 ? 'products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber) . '/fiches'
                 : 'product/' . urlencode($registrationNumber) . '/fiches';
+
+            $queryParams = ['noRedirect' => $noRedirect ? 'true' : 'false'];
+            if ($language !== null) {
+                $queryParams['language'] = $language;
+            }
 
             $response = $this->httpClient->request('GET', $path, [
                 'query' => $queryParams,

@@ -321,23 +321,52 @@ final class EprelClientTest extends TestCase
         $this->assertSame('https://eprel.ec.europa.eu/label/12345.png', $result->address);
     }
 
-    public function testGetFichesBinary(): void
+    public function testGetFichesBinaryWithLanguage(): void
     {
         $mock = new MockHandler([
             new Response(200, ['Content-Type' => 'application/pdf'], 'fake-pdf-data')
         ]);
 
+        $container = [];
+        $history = \GuzzleHttp\Middleware::history($container);
         $handlerStack = HandlerStack::create($mock);
+        $handlerStack->push($history);
         $httpClient = new GuzzleClient(['handler' => $handlerStack]);
 
         $client = new EprelClient(['httpClient' => $httpClient]);
 
-        $result = $client->getFiches('12345', 'REFRIGERATORS', ['language' => 'EN']);
+        $result = $client->getFiches('12345', 'REFRIGERATORS', 'EN', false);
 
         $this->assertSame('fake-pdf-data', $result);
+        /** @var array{request: \Psr\Http\Message\RequestInterface} $entry */
+        $entry = $container[0];
+        $this->assertStringContainsString('language=EN', $entry['request']->getUri()->getQuery());
+        $this->assertStringContainsString('noRedirect=false', $entry['request']->getUri()->getQuery());
     }
 
-    public function testGetFichesJson(): void
+    public function testGetFichesZipWithoutLanguage(): void
+    {
+        $mock = new MockHandler([
+            new Response(200, ['Content-Type' => 'application/zip'], 'fake-zip-data')
+        ]);
+
+        $container = [];
+        $history = \GuzzleHttp\Middleware::history($container);
+        $handlerStack = HandlerStack::create($mock);
+        $handlerStack->push($history);
+        $httpClient = new GuzzleClient(['handler' => $handlerStack]);
+
+        $client = new EprelClient(['httpClient' => $httpClient]);
+
+        $result = $client->getFiches('12345', null, null, false);
+
+        $this->assertSame('fake-zip-data', $result);
+        /** @var array{request: \Psr\Http\Message\RequestInterface} $entry */
+        $entry = $container[0];
+        $this->assertStringNotContainsString('language=', $entry['request']->getUri()->getQuery());
+    }
+
+    public function testGetFichesDefaultsToNoRedirect(): void
     {
         $mock = new MockHandler([
             new Response(200, ['Content-Type' => 'application/json'], (string) json_encode([
@@ -345,15 +374,21 @@ final class EprelClientTest extends TestCase
             ]))
         ]);
 
+        $container = [];
+        $history = \GuzzleHttp\Middleware::history($container);
         $handlerStack = HandlerStack::create($mock);
+        $handlerStack->push($history);
         $httpClient = new GuzzleClient(['handler' => $handlerStack]);
 
         $client = new EprelClient(['httpClient' => $httpClient]);
 
-        $result = $client->getFiches('12345', null, ['noRedirect' => true]);
+        $result = $client->getFiches('12345', null, 'EN');
 
         $this->assertInstanceOf(AddressResponse::class, $result);
         $this->assertSame('https://eprel.ec.europa.eu/fiche/12345.pdf', $result->address);
+        /** @var array{request: \Psr\Http\Message\RequestInterface} $entry */
+        $entry = $container[0];
+        $this->assertStringContainsString('noRedirect=true', $entry['request']->getUri()->getQuery());
     }
 
     public function testGetNestedLabelSuccess(): void
