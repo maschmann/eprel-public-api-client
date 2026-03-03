@@ -389,14 +389,15 @@ final class EprelClient
     }
 
     /**
+     * @param string[] $languages  Zero = ZIP all languages, one = single PDF, multiple = ZIP for those languages.
      * @throws ResourceNotFoundException
      * @throws EprelApiException
      */
     public function getFiches(
         string $registrationNumber,
         ?string $productGroup = null,
-        ?string $language = null,
-        bool $noRedirect = true
+        array $languages = [],
+        bool $noRedirect = false
     ): string|AddressResponse {
         $this->initialize();
         \assert($this->httpClient instanceof ClientInterface);
@@ -406,13 +407,15 @@ final class EprelClient
                 ? 'products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber) . '/fiches'
                 : 'product/' . urlencode($registrationNumber) . '/fiches';
 
-            $queryParams = ['noRedirect' => $noRedirect ? 'true' : 'false'];
-            if ($language !== null) {
-                $queryParams['language'] = $language;
+            // Build query string manually so multiple language values are encoded
+            // as repeated params (language=EN&language=DE) rather than indexed arrays.
+            $queryParts = ['noRedirect=' . ($noRedirect ? 'true' : 'false')];
+            foreach ($languages as $lang) {
+                $queryParts[] = 'language=' . urlencode($lang);
             }
 
             $response = $this->httpClient->request('GET', $path, [
-                'query' => $queryParams,
+                'query' => implode('&', $queryParts),
             ]);
 
             $contentType = $response->getHeaderLine('Content-Type');
