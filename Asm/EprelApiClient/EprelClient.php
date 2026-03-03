@@ -130,16 +130,15 @@ final class EprelClient
         }
 
         $config = [
-            'base_uri' => $this->uri,
+            // Guzzle requires a trailing slash on base_uri so that relative
+            // path segments are resolved correctly under the base path.
+            // Without it, leading-slash paths replace the entire path component.
+            'base_uri' => rtrim($this->uri, '/') . '/',
             'headers' => [
                 'Accept' => 'application/json',
                 'User-Agent' => 'Asm-Eprel-Client/1.0',
             ],
         ];
-
-        if ($this->apiKey !== null) {
-            $config['headers']['X-Api-Key'] = $this->apiKey;
-        }
 
         // Apply versioning logic if needed in base_uri or headers
         if ($this->version !== 'latest') {
@@ -147,6 +146,22 @@ final class EprelClient
         }
 
         $this->httpClient = new GuzzleClient($config);
+    }
+
+    /**
+     * Returns request options including the API key header for the two
+     * endpoints that require authentication: getProductsByGroup() and exportProducts().
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function withApiKey(array $options = []): array
+    {
+        if ($this->apiKey !== null) {
+            $options['headers']['X-Api-Key'] = $this->apiKey;
+        }
+
+        return $options;
     }
 
     public function getHttpClient(): ClientInterface
@@ -162,7 +177,7 @@ final class EprelClient
         \assert($this->httpClient instanceof ClientInterface);
 
         try {
-            $response = $this->httpClient->request('GET', '/ping');
+            $response = $this->httpClient->request('GET', 'ping');
             return $response->getStatusCode() === 200;
         } catch (\Throwable $e) {
             $this->logger->error('Ping failed: ' . $e->getMessage());
@@ -189,7 +204,7 @@ final class EprelClient
                 return array_map(fn (array $group) => ProductGroup::fromArray($group), $data);
             }
 
-            $response = $this->httpClient->request('GET', '/product-groups');
+            $response = $this->httpClient->request('GET', 'product-groups');
 
             /** @var array<int, array<string, mixed>> $data */
             $data = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
@@ -225,9 +240,9 @@ final class EprelClient
                 return ProductPage::fromArray($data);
             }
 
-            $response = $this->httpClient->request('GET', '/products', [
+            $response = $this->httpClient->request('GET', 'products', $this->withApiKey([
                 'query' => $queryParams,
-            ]);
+            ]));
 
             /** @var array<string, mixed> $data */
             $data = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
@@ -267,9 +282,9 @@ final class EprelClient
                 return ProductGroupPage::fromArray($data);
             }
 
-            $response = $this->httpClient->request('GET', '/products/' . urlencode($productGroup), [
+            $response = $this->httpClient->request('GET', 'products/' . urlencode($productGroup), $this->withApiKey([
                 'query' => $queryParams,
-            ]);
+            ]));
 
             /** @var array<string, mixed> $data */
             $data = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
@@ -305,8 +320,8 @@ final class EprelClient
             }
 
             $path = $productGroup !== null
-                ? '/products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber)
-                : '/product/' . urlencode($registrationNumber);
+                ? 'products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber)
+                : 'product/' . urlencode($registrationNumber);
 
             $response = $this->httpClient->request('GET', $path);
 
@@ -344,8 +359,8 @@ final class EprelClient
 
         try {
             $path = $productGroup !== null
-                ? '/products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber) . '/labels'
-                : '/product/' . urlencode($registrationNumber) . '/labels';
+                ? 'products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber) . '/labels'
+                : 'product/' . urlencode($registrationNumber) . '/labels';
 
             $response = $this->httpClient->request('GET', $path, [
                 'query' => $queryParams,
@@ -384,8 +399,8 @@ final class EprelClient
 
         try {
             $path = $productGroup !== null
-                ? '/products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber) . '/fiches'
-                : '/product/' . urlencode($registrationNumber) . '/fiches';
+                ? 'products/' . urlencode($productGroup) . '/' . urlencode($registrationNumber) . '/fiches'
+                : 'product/' . urlencode($registrationNumber) . '/fiches';
 
             $response = $this->httpClient->request('GET', $path, [
                 'query' => $queryParams,
@@ -420,7 +435,7 @@ final class EprelClient
         \assert($this->httpClient instanceof ClientInterface);
 
         try {
-            $response = $this->httpClient->request('GET', '/product/' . urlencode($registrationNumber) . '/nested-label');
+            $response = $this->httpClient->request('GET', 'product/' . urlencode($registrationNumber) . '/nested-label');
 
             return $response->getBody()->getContents();
         } catch (ClientException $e) {
@@ -443,7 +458,7 @@ final class EprelClient
         \assert($this->httpClient instanceof ClientInterface);
 
         try {
-            $response = $this->httpClient->request('GET', '/product/' . urlencode($registrationNumber) . '/class-arrow-with-scale');
+            $response = $this->httpClient->request('GET', 'product/' . urlencode($registrationNumber) . '/class-arrow-with-scale');
 
             return $response->getBody()->getContents();
         } catch (ClientException $e) {
@@ -467,7 +482,7 @@ final class EprelClient
         \assert($this->httpClient instanceof ClientInterface);
 
         try {
-            $response = $this->httpClient->request('GET', '/product/gtin/' . urlencode($gtin));
+            $response = $this->httpClient->request('GET', 'product/gtin/' . urlencode($gtin));
             /** @psalm-suppress MixedAssignment */
             $data = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
 
@@ -501,7 +516,7 @@ final class EprelClient
         \assert($this->httpClient instanceof ClientInterface);
 
         try {
-            $response = $this->httpClient->request('GET', '/exportProducts/' . urlencode($productGroup));
+            $response = $this->httpClient->request('GET', 'exportProducts/' . urlencode($productGroup), $this->withApiKey());
 
             return $response->getBody()->getContents();
         } catch (ClientException $e) {

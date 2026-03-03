@@ -468,4 +468,69 @@ final class EprelClientTest extends TestCase
 
         $this->assertSame('<svg>arrow</svg>', $result);
     }
+
+    public function testApiKeyIsSentOnlyForGetProductsByGroup(): void
+    {
+        $mock = new MockHandler([
+            new Response(200, [], (string) json_encode(['size' => 0, 'offset' => 0, 'hits' => []])),
+        ]);
+
+        $container = [];
+        $history = \GuzzleHttp\Middleware::history($container);
+        $handlerStack = HandlerStack::create($mock);
+        $handlerStack->push($history);
+
+        $httpClient = new GuzzleClient(['handler' => $handlerStack]);
+        $client = new EprelClient(['httpClient' => $httpClient, 'apiKey' => 'secret']);
+
+        $client->getProductsByGroup('REFRIGERATORS');
+
+        /** @var array{request: \Psr\Http\Message\RequestInterface} $entry */
+        $entry = $container[0];
+        $this->assertSame('secret', $entry['request']->getHeaderLine('X-Api-Key'));
+    }
+
+    public function testApiKeyIsSentForGetProducts(): void
+    {
+        $mock = new MockHandler([
+            new Response(200, [], (string) json_encode([
+                'content' => [], 'totalElements' => 0, 'totalPages' => 0, 'size' => 0, 'number' => 0,
+            ])),
+        ]);
+
+        $container = [];
+        $history = \GuzzleHttp\Middleware::history($container);
+        $handlerStack = HandlerStack::create($mock);
+        $handlerStack->push($history);
+
+        $httpClient = new GuzzleClient(['handler' => $handlerStack]);
+        $client = new EprelClient(['httpClient' => $httpClient, 'apiKey' => 'secret']);
+
+        $client->getProducts();
+
+        /** @var array{request: \Psr\Http\Message\RequestInterface} $entry */
+        $entry = $container[0];
+        $this->assertSame('secret', $entry['request']->getHeaderLine('X-Api-Key'));
+    }
+
+    public function testApiKeyIsSentForExportProducts(): void
+    {
+        $mock = new MockHandler([
+            new Response(200, ['Content-Type' => 'application/zip'], 'zip-data'),
+        ]);
+
+        $container = [];
+        $history = \GuzzleHttp\Middleware::history($container);
+        $handlerStack = HandlerStack::create($mock);
+        $handlerStack->push($history);
+
+        $httpClient = new GuzzleClient(['handler' => $handlerStack]);
+        $client = new EprelClient(['httpClient' => $httpClient, 'apiKey' => 'secret']);
+
+        $client->exportProducts('REFRIGERATORS');
+
+        /** @var array{request: \Psr\Http\Message\RequestInterface} $entry */
+        $entry = $container[0];
+        $this->assertSame('secret', $entry['request']->getHeaderLine('X-Api-Key'));
+    }
 }

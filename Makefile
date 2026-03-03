@@ -1,4 +1,4 @@
-.PHONY: setup test cs stan psalm all bash
+.PHONY: setup test cs stan psalm all bash smoke
 
 setup:
 	docker compose up -d
@@ -18,5 +18,8 @@ psalm:
 
 bash:
 	docker compose exec php bash
+
+smoke:
+	docker compose exec php php test-client.php $(ARGS)
 
 all: cs stan psalm test
