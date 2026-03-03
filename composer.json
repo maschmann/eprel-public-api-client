@@ -30,14 +30,11 @@
     "autoload": {
         "psr-4": {
             "Asm\\EprelApiClient\\": "Asm/EprelApiClient/"
-        },
-        "exclude-from-classmap": [
-            "Asm/EprelApiClient/Tests/"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
-            "Asm\\EprelApiClient\\Tests\\": "Asm/EprelApiClient/Tests/"
+            "Asm\\EprelApiClient\\Tests\\": "Tests/"
         }
     }
 }

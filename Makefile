@@ -5,7 +5,7 @@ setup:
 	docker compose exec php composer install
 
 test:
-	docker compose exec php vendor/bin/phpunit Asm/EprelApiClient/Tests
+	docker compose exec php vendor/bin/phpunit Tests
 
 cs:
 	docker compose exec php vendor/bin/phpcs Asm/EprelApiClient

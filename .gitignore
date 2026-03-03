@@ -4,3 +4,5 @@ vendor
 .ai
 AGENTS.md
 GEMINI.md
+COPILOT.md
+.github/copilot-instructions.md
