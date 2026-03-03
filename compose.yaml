@@ -1,6 +1,27 @@
 services:
-  php:
-    build: .
+  php83:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.3"
+    volumes:
+      - .:/app
+    command: tail -f /dev/null
+
+  php84:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.4"
+    volumes:
+      - .:/app
+    command: tail -f /dev/null
+
+  php85:
+    build:
+      context: .
+      args:
+        PHP_VERSION: "8.5"
     volumes:
       - .:/app
     command: tail -f /dev/null

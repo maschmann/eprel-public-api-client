@@ -1,5 +1,5 @@
-FROM php:8.3-cli
-#FROM php:8.4-cli
+ARG PHP_VERSION=8.3
+FROM php:${PHP_VERSION}-cli
 
 RUN apt-get update && apt-get install -y \
     git \

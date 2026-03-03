@@ -158,7 +158,10 @@ final class EprelClient
     private function withApiKey(array $options = []): array
     {
         if ($this->apiKey !== null) {
-            $options['headers']['X-Api-Key'] = $this->apiKey;
+            /** @var array<string, mixed> $headers */
+            $headers = isset($options['headers']) && is_array($options['headers']) ? $options['headers'] : [];
+            $headers['X-Api-Key'] = $this->apiKey;
+            $options['headers'] = $headers;
         }
 
         return $options;
@@ -386,7 +389,7 @@ final class EprelClient
     }
 
     /**
-     * @param array<string, mixed> $queryParams
+     * @throws ResourceNotFoundException
      * @throws EprelApiException
      */
     public function getFiches(
